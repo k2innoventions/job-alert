@@ -1,0 +1,79 @@
+# ============================================================
+# Job Alert Configuration for Lindsey Simpson
+# Edit this file to tune what jobs get matched.
+# ============================================================
+
+# Job titles must contain at least ONE of these phrases (case-insensitive)
+include_keywords:
+  - "environment artist"
+  - "3d artist"
+  - "3d environment"
+  - "junior artist"
+  - "associate artist"
+  - "3d modeler"
+  - "3d generalist"
+  - "level artist"
+  - "lighting artist"
+  - "world artist"
+  - "prop artist"
+  - "visualization artist"
+  - "cg artist"
+
+# Job titles containing ANY of these are skipped (too senior / wrong field)
+exclude_keywords:
+  - "senior"
+  - "sr."
+  - "lead"
+  - "principal"
+  - "director"
+  - "manager"
+  - "supervisor"
+  - "head of"
+  - "staff"
+  - "tattoo"
+  - "makeup"
+  - "nail"
+
+# A job passes the location filter if its location contains ANY of these,
+# OR if it is flagged remote. Add cities/states if she'd relocate.
+locations:
+  - "orlando"
+  - "florida"
+  - ", fl"
+  - "remote"
+  - "united states"   # many postings just say this; remove if too noisy
+
+include_remote: true
+
+# --- Adzuna broad search (https://developer.adzuna.com - free key) ---
+# These are the search phrases sent to Adzuna. Keep them short.
+adzuna_searches:
+  - "3d environment artist"
+  - "junior 3d artist"
+  - "environment artist"
+  - "3d modeler"
+adzuna_where: "Orlando, FL"   # center of search
+adzuna_distance_km: 80         # radius; remote jobs come from Remotive instead
+adzuna_country: "us"
+
+# --- Remotive remote-job search (no key needed) ---
+remotive_searches:
+  - "3d artist"
+  - "environment artist"
+
+# --- Company boards (Greenhouse / Lever public JSON APIs) ---
+# Find a company's token from its careers page URL:
+#   boards.greenhouse.io/TOKEN   or   jobs.lever.co/TOKEN
+# The script skips any board that 404s and lists it in the email footer,
+# so wrong guesses are harmless. Add/remove freely.
+greenhouse_boards:
+  - epicgames          # Epic Games (Unreal Engine)
+  - irongalaxystudios  # Iron Galaxy (has an Orlando studio) - verify token
+  - highvoltagesoftware
+  - thatgamecompany
+
+lever_boards:
+  - sucker-punch-productions   # example - verify token
+
+# For these companies, filter board results by keywords only (their boards
+# are small enough that location is checked from the posting itself).
