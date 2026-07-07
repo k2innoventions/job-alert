@@ -75,7 +75,7 @@ def fetch_adzuna(cfg, errors):
                     "where": cfg.get("adzuna_where", ""),
                     "distance": int(cfg.get("adzuna_distance_km", 80)),
                     "results_per_page": 50,
-                    "max_days_old": 7,
+                    "max_days_old": int(cfg.get("adzuna_max_days_old", 30)),
                     "content-type": "application/json",
                 },
                 headers=HEADERS,
@@ -181,6 +181,45 @@ def fetch_lever(cfg, errors):
     return jobs
 
 
+def fetch_jazzhr(cfg, errors):
+    """JazzHR career pages ({token}.applytojob.com) are simple server-rendered
+    HTML; extract posting links with a regex. No public JSON API."""
+    import re
+    jobs = []
+    for board in cfg.get("jazzhr_boards", []) or []:
+        token = board.get("token")
+        if not token:
+            continue
+        company = board.get("company", token.title())
+        loc = board.get("location_note", "")
+        try:
+            r = requests.get(f"https://{token}.applytojob.com/", headers=HEADERS, timeout=TIMEOUT)
+            if r.status_code == 404:
+                errors.append(f"JazzHR board '{token}' not found - fix token in config.yaml")
+                continue
+            r.raise_for_status()
+            pattern = rf'href="(https://{re.escape(token)}\.applytojob\.com/apply/([A-Za-z0-9]+)[^"]*)"[^>]*>([^<]+)</a>'
+            found = re.findall(pattern, r.text)
+            if not found:
+                errors.append(f"JazzHR board '{token}' returned no parseable postings - page layout may have changed")
+            for url, job_id, title in found:
+                title = title.strip()
+                if not title or title.lower() in ("apply", "apply now", "learn more"):
+                    continue
+                jobs.append({
+                    "id": f"jazzhr:{token}:{job_id}",
+                    "title": title,
+                    "company": company,
+                    "location": loc,
+                    "url": url,
+                    "source": "Company board (JazzHR)",
+                    "remote": "remote" in loc.lower(),
+                })
+        except Exception as e:
+            errors.append(f"JazzHR board '{token}' failed: {e}")
+    return jobs
+
+
 # ----------------------------------------------------------------------
 # Email
 # ----------------------------------------------------------------------
@@ -250,6 +289,7 @@ def main():
         + fetch_remotive(cfg, errors)
         + fetch_greenhouse(cfg, errors)
         + fetch_lever(cfg, errors)
+        + fetch_jazzhr(cfg, errors)
     )
 
     new_jobs, new_ids = [], []

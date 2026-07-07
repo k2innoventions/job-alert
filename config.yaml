@@ -18,6 +18,9 @@ include_keywords:
   - "prop artist"
   - "visualization artist"
   - "cg artist"
+  - "3d art"            # catches "3D Art Intern" style titles
+  - "environment art"   # catches "Environment Art Intern/Apprentice"
+  - "world builder"
 
 # Job titles containing ANY of these are skipped (too senior / wrong field)
 exclude_keywords:
@@ -55,6 +58,8 @@ adzuna_searches:
 adzuna_where: "Orlando, FL"   # center of search
 adzuna_distance_km: 80         # radius; remote jobs come from Remotive instead
 adzuna_country: "us"
+adzuna_max_days_old: 30        # lookback window; 30 casts a wide net at first,
+                               # dedupe means nothing repeats. Lower to 7 later.
 
 # --- Remotive remote-job search (no key needed) ---
 remotive_searches:
@@ -67,13 +72,18 @@ remotive_searches:
 # The script skips any board that 404s and lists it in the email footer,
 # so wrong guesses are harmless. Add/remove freely.
 greenhouse_boards:
-  - epicgames          # Epic Games (Unreal Engine)
-  - irongalaxystudios  # Iron Galaxy (has an Orlando studio) - verify token
-  - highvoltagesoftware
-  - thatgamecompany
+  - epicgames          # Epic Games (Unreal Engine) - verified working
 
-lever_boards:
-  - sucker-punch-productions   # example - verify token
+lever_boards: []       # add tokens from jobs.lever.co/TOKEN careers pages
+
+# --- JazzHR boards ({token}.applytojob.com career pages) ---
+# location_note is used as the listing's location since JazzHR postings
+# are parsed from the careers page. Iron Galaxy verified: they post all
+# studios (Chicago / Orlando / Nashville) on this one page.
+jazzhr_boards:
+  - token: irongalaxy
+    company: Iron Galaxy Studios
+    location_note: "Chicago / Orlando / Nashville"
 
 # For these companies, filter board results by keywords only (their boards
 # are small enough that location is checked from the posting itself).
