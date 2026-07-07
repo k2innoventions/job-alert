@@ -50,6 +50,35 @@ def location_matches(location: str, remote: bool, cfg) -> bool:
     return any(want in loc for want in cfg["locations"])
 
 
+import re as _re
+
+_EXP_PATTERNS = [
+    _re.compile(r"(\d{1,2})\s*\+?\s*(?:or more\s+)?years?[^.\n]{0,50}?experience", _re.I),
+    _re.compile(r"experience[^.\n]{0,50}?(\d{1,2})\s*\+?\s*years?", _re.I),
+    _re.compile(r"minimum(?:\s+of)?\s+(\d{1,2})\s*\+?\s*years?", _re.I),
+    _re.compile(r"at least\s+(\d{1,2})\s*\+?\s*years?", _re.I),
+]
+
+
+def experience_ok(description: str, cfg) -> bool:
+    """Reject postings that explicitly demand more years than the cap.
+    Uses the SMALLEST years figure found (postings often list several
+    numbers; the smallest is closest to the true floor). Postings with
+    no stated requirement pass."""
+    if not description:
+        return True
+    cap = int(cfg.get("max_experience_years", 3))
+    years_found = []
+    for pat in _EXP_PATTERNS:
+        for m in pat.finditer(description):
+            n = int(m.group(1))
+            if 1 <= n <= 15:  # ignore "20 years in the industry" boilerplate
+                years_found.append(n)
+    if not years_found:
+        return True
+    return min(years_found) <= cap
+
+
 # ----------------------------------------------------------------------
 # Sources — each returns a list of dicts:
 #   {id, title, company, location, url, source, remote(bool)}
@@ -89,6 +118,7 @@ def fetch_adzuna(cfg, errors):
                     "company": (item.get("company") or {}).get("display_name", "Unknown"),
                     "location": (item.get("location") or {}).get("display_name", ""),
                     "url": item.get("redirect_url", ""),
+                    "description": item.get("description", "") or "",
                     "source": "Adzuna",
                     "remote": False,
                 })
@@ -115,6 +145,7 @@ def fetch_remotive(cfg, errors):
                     "company": item.get("company_name", "Unknown"),
                     "location": item.get("candidate_required_location", "Remote"),
                     "url": item.get("url", ""),
+                    "description": _re.sub(r"<[^>]+>", " ", item.get("description", "") or ""),
                     "source": "Remotive (remote)",
                     "remote": True,
                 })
@@ -128,7 +159,7 @@ def fetch_greenhouse(cfg, errors):
     for board in cfg.get("greenhouse_boards", []):
         try:
             r = requests.get(
-                f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs",
+                f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true",
                 headers=HEADERS,
                 timeout=TIMEOUT,
             )
@@ -138,12 +169,14 @@ def fetch_greenhouse(cfg, errors):
             r.raise_for_status()
             for item in r.json().get("jobs", []):
                 loc = (item.get("location") or {}).get("name", "")
+                raw = html.unescape(item.get("content", "") or "")
                 jobs.append({
                     "id": f"greenhouse:{board}:{item.get('id')}",
                     "title": item.get("title", ""),
                     "company": board.replace("-", " ").title(),
                     "location": loc,
                     "url": item.get("absolute_url", ""),
+                    "description": _re.sub(r"<[^>]+>", " ", raw),
                     "source": "Company board (Greenhouse)",
                     "remote": "remote" in loc.lower(),
                 })
@@ -173,6 +206,7 @@ def fetch_lever(cfg, errors):
                     "company": board.replace("-", " ").title(),
                     "location": loc,
                     "url": item.get("hostedUrl", ""),
+                    "description": item.get("descriptionPlain", "") or "",
                     "source": "Company board (Lever)",
                     "remote": "remote" in loc.lower(),
                 })
@@ -299,6 +333,8 @@ def main():
         if not title_matches(j["title"], cfg):
             continue
         if not location_matches(j["location"], j["remote"], cfg):
+            continue
+        if not experience_ok(j.get("description", ""), cfg):
             continue
         seen.add(j["id"])
         new_ids.append(j["id"])

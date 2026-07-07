@@ -33,9 +33,18 @@ exclude_keywords:
   - "supervisor"
   - "head of"
   - "staff"
+  - "mid-level"
+  - "mid level"
+  - " iii"          # "Artist III"
+  - " ii"           # "Artist II"
   - "tattoo"
   - "makeup"
   - "nail"
+
+# Drop postings whose description demands more than this many years of
+# experience (e.g. "4+ years required" is dropped when this is 3).
+# Postings that don't state a number are kept.
+max_experience_years: 3
 
 # A job passes the location filter if its location contains ANY of these,
 # OR if it is flagged remote. Add cities/states if she'd relocate.
